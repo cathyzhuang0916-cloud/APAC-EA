@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Document Compliance Dashboard</title>
+<style>
+/* ── Design tokens ─────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --surface-1:      #fcfcfb;
+  --surface-page:   #f9f9f7;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --baseline:       #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+
+  /* Sequential green ramp (score 0→5, light→dark) */
+  --seq-0: #fdf4ec;   /* score 0 – near-surface warm */
+  --seq-1: #fdd8a4;   /* score 1 */
+  --seq-2: #f9ad5c;   /* score 2 */
+  --seq-3: #d4edbc;   /* score 3 – mid neutral-green */
+  --seq-4: #6dc16d;   /* score 4 */
+  --seq-5: #1e7c1e;   /* score 5 */
+
+  /* Score text on fill */
+  --seq-text-0: #7a4a10;
+  --seq-text-1: #7a4a10;
+  --seq-text-2: #5c2e00;
+  --seq-text-3: #2d5c10;
+  --seq-text-4: #0d3d0d;
+  --seq-text-5: #ffffff;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-page:   #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+
+    --seq-0: #3d2800;
+    --seq-1: #7a4a10;
+    --seq-2: #b36c1a;
+    --seq-3: #2d5c10;
+    --seq-4: #1e7c1e;
+    --seq-5: #6dc16d;
+
+    --seq-text-0: #fdd8a4;
+    --seq-text-1: #fdf4ec;
+    --seq-text-2: #fdf4ec;
+    --seq-text-3: #d4edbc;
+    --seq-text-4: #ffffff;
+    --seq-text-5: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --surface-page:   #0d0d0d;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border:         rgba(255,255,255,0.10);
+
+  --seq-0: #3d2800;
+  --seq-1: #7a4a10;
+  --seq-2: #b36c1a;
+  --seq-3: #2d5c10;
+  --seq-4: #1e7c1e;
+  --seq-5: #6dc16d;
+
+  --seq-text-0: #fdd8a4;
+  --seq-text-1: #fdf4ec;
+  --seq-text-2: #fdf4ec;
+  --seq-text-3: #d4edbc;
+  --seq-text-4: #ffffff;
+  --seq-text-5: #0b0b0b;
+}
+
+/* ── Reset & base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────── */
+.page-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.header-left h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+.header-left .subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.btn-theme {
+  border: 1px solid var(--baseline);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-theme:hover { background: var(--gridline); }
+
+.btn-fix {
+  background: #eb6834;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn-fix:hover  { background: #d4561f; }
+.btn-fix:active { opacity: 0.85; }
+.btn-fix:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Fix modal ─────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  width: 100%; max-width: 520px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 24px 24px 20px;
+}
+.modal-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.modal-subtitle {
+  font-size: 12px; color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.modal-close {
+  float: right; margin-top: -28px;
+  background: none; border: none;
+  font-size: 20px; color: var(--text-muted);
+  cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: var(--text-primary); }
+
+/* Spinner */
+.spinner-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 0; color: var(--text-secondary); font-size: 13px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--gridline);
+  border-top-color: #eb6834;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Results table */
+.fix-results { margin-top: 4px; }
+.result-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 13px;
+}
+.result-row:last-child { border-bottom: none; }
+.result-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+.result-info { flex: 1; }
+.result-file { font-weight: 500; color: var(--text-primary); }
+.result-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.result-detail.ok  { color: #1e7c1e; }
+.result-detail.warn { color: #c98500; }
+.result-detail.err  { color: #d03b3b; }
+
+.modal-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gridline);
+  font-size: 12px; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+}
+.modal-footer code {
+  background: var(--surface-page);
+  border: 1px solid var(--gridline);
+  border-radius: 4px;
+  padding: 2px 6px; font-size: 11px;
+  font-family: ui-monospace, monospace;
+  color: var(--text-primary);
+}
+.btn-close-modal {
+  background: var(--surface-page);
+  border: 1px solid var(--baseline);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 5px 14px; font-size: 12px;
+  cursor: pointer;
+}
+.btn-close-modal:hover { background: var(--gridline); }
+
+/* Server-not-running notice */
+.server-notice {
+  background: #fff3e0;
+  border: 1px solid #f9ad5c;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #5c2e00;
+}
+[data-theme="dark"] .server-notice {
+  background: #3d2800; border-color: #7a4a10; color: #fdd8a4;
+}
+.server-notice strong { display: block; margin-bottom: 6px; }
+.server-notice code {
+  background: rgba(0,0,0,0.08);
+  border-radius: 4px; padding: 2px 6px;
+  font-family: ui-monospace, monospace; font-size: 12px;
+}
+
+/* ── Summary tiles ─────────────────────────────────────────────────── */
+.summary-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.tile {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  flex: 1 1 140px;
+}
+.tile-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.tile-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.tile-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* ── Distribution chips ────────────────────────────────────────────── */
+.dist-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+}
+.chip-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Section headers ───────────────────────────────────────────────── */
+.section-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+  margin-top: 32px;
+}
+
+/* ── Heatmap ───────────────────────────────────────────────────────── */
+.heatmap-wrap {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.heatmap {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 640px;
+}
+.heatmap th {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 10px 8px 8px;
+  border-bottom: 1px solid var(--gridline);
+  white-space: nowrap;
+}
+.heatmap th.col-file { text-align: left; padding-left: 16px; min-width: 200px; }
+.heatmap th.col-total { min-width: 64px; }
+.heatmap td { padding: 0; border-bottom: 1px solid var(--gridline); }
+.heatmap tr:last-child td { border-bottom: none; }
+.heatmap td.cell-file {
+  padding: 0 12px 0 16px;
+  white-space: nowrap;
+}
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: block;
+  padding: 12px 0;
+}
+.file-level {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: -8px;
+  padding-bottom: 12px;
+}
+
+/* Score cells */
+.cell-score {
+  text-align: center;
+  vertical-align: middle;
+  padding: 6px 4px;
+  position: relative;
+}
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+}
+.score-pill:hover {
+  transform: scale(1.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  z-index: 10;
+}
+.score-pill[data-score="0"] { background: var(--seq-0); color: var(--seq-text-0); }
+.score-pill[data-score="1"] { background: var(--seq-1); color: var(--seq-text-1); }
+.score-pill[data-score="2"] { background: var(--seq-2); color: var(--seq-text-2); }
+.score-pill[data-score="3"] { background: var(--seq-3); color: var(--seq-text-3); }
+.score-pill[data-score="4"] { background: var(--seq-4); color: var(--seq-text-4); }
+.score-pill[data-score="5"] { background: var(--seq-5); color: var(--seq-text-5); }
+
+/* Total cell */
+.cell-total {
+  text-align: center;
+  vertical-align: middle;
+  padding: 6px 8px;
+}
+.total-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 1.5px solid var(--baseline);
+  background: transparent;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* ── Legend ────────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}
+.legend-label { font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+.legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.legend-box {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Tooltip ───────────────────────────────────────────────────────── */
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  background: var(--surface-1);
+  border: 1px solid var(--baseline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 10px 13px;
+  max-width: 300px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.tooltip.visible { opacity: 1; }
+.tooltip-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 5px;
+}
+.tooltip-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.tooltip-score-pill {
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.tooltip-score-label { font-size: 12px; color: var(--text-secondary); }
+.tooltip-body { font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+
+/* ── Detail cards ──────────────────────────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.doc-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.card-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--gridline);
+}
+.card-filename {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.card-total {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.card-level {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.card-body { padding: 12px 16px; }
+.category-row { margin-bottom: 10px; }
+.cat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.cat-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.cat-score-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.cat-score-chip[data-score="0"] { background: var(--seq-0); color: var(--seq-text-0); }
+.cat-score-chip[data-score="1"] { background: var(--seq-1); color: var(--seq-text-1); }
+.cat-score-chip[data-score="2"] { background: var(--seq-2); color: var(--seq-text-2); }
+.cat-score-chip[data-score="3"] { background: var(--seq-3); color: var(--seq-text-3); }
+.cat-score-chip[data-score="4"] { background: var(--seq-4); color: var(--seq-text-4); }
+.cat-score-chip[data-score="5"] { background: var(--seq-5); color: var(--seq-text-5); }
+.cat-bar-track {
+  height: 4px;
+  background: var(--gridline);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.cat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(.4,0,.2,1);
+}
+.cat-rationale {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.edits-list {
+  margin-top: 6px;
+  padding-left: 0;
+  list-style: none;
+}
+.edit-item {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding: 5px 8px;
+  background: var(--surface-page);
+  border-left: 2px solid var(--seq-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom: 5px;
+}
+.edit-item .before { color: var(--text-muted); }
+.edit-item .after { color: #006300; font-weight: 500; }
+[data-theme="dark"] .edit-item .after { color: #6dc16d; }
+
+/* ── Table view (accessible fallback) ─────────────────────────────── */
+.table-view { display: none; }
+.table-view table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.table-view th, .table-view td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--gridline);
+}
+.table-view th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+/* ── Toggle table button ───────────────────────────────────────────── */
+.btn-table {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--baseline);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn-table:hover { background: var(--gridline); }
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gridline);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Marketing Document Compliance</h1>
+      <div class="subtitle" id="subtitle">Loading…</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-fix" id="fixBtn" onclick="openFixModal()">
+        <span>⚙</span> Fix Documents
+      </button>
+      <button class="btn-theme" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    </div>
+  </div>
+
+  <!-- Summary tiles -->
+  <div class="summary-row" id="summaryRow"></div>
+
+  <!-- Distribution chips -->
+  <div class="dist-chips" id="distChips"></div>
+
+  <!-- Heatmap -->
+  <div class="section-header">Score Heatmap</div>
+  <div class="heatmap-wrap">
+    <table class="heatmap" id="heatmapTable" aria-label="Document compliance scores by category">
+      <thead id="heatmapHead"></thead>
+      <tbody id="heatmapBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend" id="heatmapLegend"></div>
+
+  <!-- Table view toggle -->
+  <button class="btn-table" onclick="toggleTableView()">Show data table</button>
+  <div class="table-view" id="tableView"></div>
+
+  <!-- Detail cards -->
+  <div class="section-header" style="margin-top:36px;">Document Details &amp; Suggested Edits</div>
+  <div class="cards-grid" id="cardsGrid"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span id="footerGen"></span>
+    <span>Rubric: Document Compliance Rubric v1.0 · Max score: 25</span>
+  </div>
+</div>
+
+<!-- Fix modal -->
+<div class="modal-overlay" id="fixModal" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeFixModal()" aria-label="Close">×</button>
+    <div class="modal-title">Fix Documents</div>
+    <div class="modal-subtitle" id="modalSubtitle">Apply rubric suggestions and save corrected copies to the <code>fixed/</code> folder.</div>
+    <div id="modalContent">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn-fix" id="modalRunBtn" onclick="runFix()" style="flex:1;justify-content:center;">
+          <span id="runBtnIcon">⚙</span> <span id="runBtnText">Run Fix</span>
+        </button>
+      </div>
+      <div id="fixStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip" role="tooltip">
+  <div class="tooltip-header" id="ttHeader"></div>
+  <div class="tooltip-score">
+    <div class="tooltip-score-pill" id="ttPill"></div>
+    <div class="tooltip-score-label" id="ttScoreLabel"></div>
+  </div>
+  <div class="tooltip-body" id="ttBody"></div>
+</div>
+
+<script>
+// ── Embedded data ──────────────────────────────────────────────────────────
+const DATA = {"generated_at": "2026-08-11T20:27:06.218075", "rubric_categories": ["Tone and Professional Voice", "Clarity and Readability", "Formatting and Structure", "Data and Evidence Usage", "Compliance With Style Guide"], "compliance_thresholds": [{"min": 21, "max": 25, "label": "Excellent"}, {"min": 16, "max": 20, "label": "Good - minor improvements needed"}, {"min": 11, "max": 15, "label": "Moderate issues"}, {"min": 6, "max": 10, "label": "Significant issues"}, {"min": 0, "max": 5, "label": "Major compliance problems"}], "documents": [{"filename": "Brand Content.docx", "scores": {"Tone and Professional Voice": 4, "Clarity and Readability": 4, "Formatting and Structure": 3, "Data and Evidence Usage": 3, "Compliance With Style Guide": 2}, "total_score": 16, "compliance_level": "Good - minor improvements needed", "rationale": {"Tone and Professional Voice": "The document maintains a confident, warm, and consistent brand voice that aligns with the stated brand personality (confident, curious, dependable) and verbal attributes (playfulness, passion). Employee bios and blog content are engaging and on-brand, though occasional casual phrasing like ‘we do it better than everyone else’ and ‘The app is really amazing’ verge on unsubstantiated boasting rather than professional confidence.", "Clarity and Readability": "The prose is generally clear, well-paced, and easy to follow across sections, with effective use of rhetorical questions and concrete examples (e.g., the printer maintenance AI example). Some sentences are overloaded or awkward, such as ‘Each office provided amazingly creative ideas, but in the end it was the office out of Nairobi,’ which is an incomplete/broken construction that impairs readability.", "Formatting and Structure": "The document has a comprehensive table of contents and logical top-level organization (About, Purpose, Products, Solutions, Red30 Cares, People, Blog, Social). However, heading capitalization is wildly inconsistent (e.g., ‘voice’, ‘products’, ‘environment’, ‘community’, ‘employees’ lowercase versus ‘Target Audience’, ‘Brand Personality’ title case), and blog quotes are inconsistently formatted—some quoted text starts inside quotation marks then continues as unquoted block text (Gobnet and Kapoor quotes), making attribution unclear.", "Data and Evidence Usage": "The document includes several concrete figures (5,000 employees, 5,000 data centers in 50 countries, over five million dollars raised, 5% operational savings, 3,000 app users), which supports credibility. However, there are internal factual inconsistencies that undermine the data: the count of employees is stated as both 300 (2015 anniversary) and 5,000; country counts appear as ‘22 countries,’ ‘50 different countries,’ and ‘100 countries by 2030’; and several claims (‘serve over three billion people yearly,’ ‘we do it better than everyone else’) lack sourcing or verification.", "Compliance With Style Guide": "There are numerous style-guide and consistency errors: inconsistent heading capitalization throughout, a misspelled/reversed name (‘Ivan Anton Urban’ vs. the correct ‘Anton Ivan Urban’), inconsistent hashtag conventions (‘#red30safeinternet’ vs. ‘#red30saferinternet’), curly vs. straight quotation mark mismatches (e.g., ‘The Problem Solver,\" and ‘amazing,\"’), grammatical errors (‘The benefits at Red30 Tech includes,’ ‘met on accident’), and an unclosed disclaimer (the abbreviated disclaimer is missing its closing asterisks). Data figures also conflict, which a style guide would flag for consistency."}, "suggested_edits": {"Tone and Professional Voice": ["Before: 'we make it possible for you to connect across the globe as easily as if you were talking to your coworker at the proverbial water cooler; and we do it better than everyone else.' After: '...as easily as if you were talking to a coworker down the hall—backed by our proven track record of reliable service.'"], "Clarity and Readability": ["Before: 'Each office provided amazingly creative ideas, but in the end it was the office out of Nairobi. They created lanyards from glass beads...' After: 'Each office provided amazingly creative ideas, but in the end the winning entry came from our Nairobi office, which created lanyards from glass beads...'"], "Formatting and Structure": ["Standardize all headings to title case. Before: 'voice', 'products', 'environment', 'community', 'employees'. After: 'Voice', 'Products', 'Environment', 'Community', 'Employees'.", "Format blog quotes consistently. Before: '\"The app is really amazing,\" said Gobnet. / I downloaded it when I got my race day information...' After: place the full quotation within quotation marks or set it as a clearly labeled block quote so the speaker's words are unambiguous."], "Data and Evidence Usage": ["Resolve the country-count inconsistency. The document states '22 countries,' '50 different countries,' and '100 countries by 2030.' Reconcile to a single current figure (e.g., 'offices in 22 countries today, with a goal of 100 by 2030') and correct the 5,000 data centers 'in 50 different countries' reference accordingly.", "Reconcile employee counts. Before: 'celebrated with all 300 of his employees' (2015) and 'a staff of 5,000 employees' (today). Confirm and align these figures or clarify the growth timeline.", "Before: 'we serve over three billion people yearly' — add a source or basis for this claim, or soften to a verifiable statement."], "Compliance With Style Guide": ["Correct the name inconsistency. Before: 'Red30 Tech’s Ivan Anton Urban offers tips.' After: 'Red30 Tech’s Anton Ivan Urban offers tips.'", "Standardize the hashtag. Before: '#red30safeinternet' (Feb 6 post) vs. '#red30saferinternet' (Nov 30 post). Choose one and use it consistently.", "Fix subject-verb agreement. Before: 'The benefits at Red30 Tech includes:' After: 'The benefits at Red30 Tech include:'. Also fix 'met on accident' to 'met by accident.'", "Close the abbreviated disclaimer. Before: '***Red30 Tech is a fictitious brand created by LinkedIn Learning solely for training purposes.' After: add the closing '***' and a consistent corporate attribution matching the full disclaimer."]}}, {"filename": "Community Member Personas.pdf", "scores": {"Tone and Professional Voice": 3, "Clarity and Readability": 2, "Formatting and Structure": 2, "Data and Evidence Usage": 2, "Compliance With Style Guide": 3}, "total_score": 12, "compliance_level": "Moderate issues", "rationale": {"Tone and Professional Voice": "The tone is generally professional and audience-focused, using phrases like 'expanding global markets' and describing persona motivations respectfully. However, casual phrasing such as 'getting stuff done over getting stuff done' (which also appears to be a typo/redundancy) and 'our bread and butter' undercut the polished voice expected in a customer-facing persona document.", "Clarity and Readability": "The document is difficult to read because the three persona columns appear interleaved and scrambled, producing broken sentences like 'Startup leaders prioritize getting stuff done over getting stuff done perfectly.' Quotes and section labels are fragmented across personas, making it hard to attribute content correctly and severely hurting readability.", "Formatting and Structure": "The intended three-column persona layout has collapsed, causing labels like 'Technological Familiarity', 'Social Networks', and traits to be mixed into unrelated sections. There is no consistent hierarchy or clear separation between personas, and repeated headings (Goals, Motivation) blur together without visual boundaries.", "Data and Evidence Usage": "The document presents personas as assertions without supporting data, sources, or research methodology to justify claims like 'Leaders in mid-sized corporations are our bread and butter.' Motivation categories (Price, Comfort, Growth, etc.) are listed without any rating scale, values, or evidence, leaving them unquantified and unverifiable.", "Compliance With Style Guide": "There are inconsistencies such as 'You Tube' (should be 'YouTube'), a likely typo in the redundant 'getting stuff done over getting stuff done' phrase, and inconsistent capitalization of trait labels. Brand names and section labels are otherwise mostly handled acceptably, but the errors indicate incomplete adherence to a style guide."}, "suggested_edits": {"Tone and Professional Voice": ["Before: 'Startup leaders prioritize getting stuff done over getting stuff done perfectly.' After: 'Startup leaders prioritize getting work done over getting it done perfectly.'", "Before: 'Leaders in mid-sized corporations are our bread and butter.' After: 'Leaders in mid-sized corporations are our core customer segment.'"], "Clarity and Readability": ["Reformat the document so each persona (Audry Topsy, Francisco Lemos de Sandoval, Leslie Richardson) is presented in a self-contained block with its full description, goals, motivations, and quote, rather than interleaving text across columns.", "Before: 'they inspire others and ask great questions.' (fragment) After: reconnect this to its parent sentence and complete each persona's narrative so no sentences are cut off or orphaned."], "Formatting and Structure": ["Separate the three personas into distinct, clearly bounded sections or cards with consistent headings (Goals, Potential Demotivators, Motivation, Current Information Sources, Technological Familiarity, Traits) placed under the correct persona.", "Ensure trait and category labels (e.g., 'Technological Familiarity', 'Social Networks') appear only once per persona and are not merged into unrelated lists."], "Data and Evidence Usage": ["Add a rating scale or values to the Motivation categories (Price, Comfort, Growth, Social, Convenience, Speed) so readers can interpret relative importance, e.g., 'Price: High, Comfort: Medium.'", "Include a brief note on the research basis for these personas (e.g., 'Based on 2024 customer interviews and survey data, n=X') to support the claims made."], "Compliance With Style Guide": ["Before: 'You Tube' After: 'YouTube'", "Standardize trait capitalization and formatting so all traits use consistent casing and punctuation across personas."]}}, {"filename": "Employee Giving Program Blog Article.docx", "scores": {"Tone and Professional Voice": 4, "Clarity and Readability": 4, "Formatting and Structure": 3, "Data and Evidence Usage": 3, "Compliance With Style Guide": 4}, "total_score": 18, "compliance_level": "Good - minor improvements needed", "rationale": {"Tone and Professional Voice": "The tone is warm, engaging, and appropriately professional for a blog article, with an inspiring voice that suits the philanthropic subject matter. Some phrasings lean slightly promotional or hyperbolic (e.g., 'built to a deafening roar,' 'the goal is similar: to make lots of money'), but these remain within acceptable blog style and do not undermine credibility.", "Clarity and Readability": "The article reads smoothly, with logical progression from the Give-a-Thon overview to specific initiatives and a personal testimonial. A few sentences are dense or slightly awkward (e.g., 'since its evolution in 2010' and 'making donating, volunteering, and tracking of all charity-related activities easy and reliable'), but overall comprehension is strong.", "Formatting and Structure": "The document is a series of unbroken paragraphs with no headings, subheadings, or bullet points to guide the reader through distinct topics (keynote, hack day, volunteer incentives). For a blog article covering multiple facets, section headers and lists would substantially improve scannability and structure.", "Data and Evidence Usage": "Several concrete figures are cited ($1.5 million, $350 million, 35 million children, $20/hour, $5,000 caps), which lends credibility. However, none of the statistics are sourced or attributed, and some claims (e.g., 'higher commitment rate for volunteers... when compared to general volunteer recruitment efforts') are vague and lack any quantification or citation.", "Compliance With Style Guide": "The document includes the required fictitious-company disclaimer and maintains consistent brand naming (Red30 Tech, Red30Cares, Give-a-Thon). Minor inconsistencies exist, such as double spacing after 'good.' in the keynote paragraph, and the URL is presented as plain text rather than styled per typical conventions."}, "suggested_edits": {"Tone and Professional Voice": [], "Clarity and Readability": [], "Formatting and Structure": ["Add section headings to break up the article, e.g., insert '## Keynote: Technology for Teens' before the Anika Patel paragraph and '## Building Tech for Good' before the hack day paragraph.", "Convert the volunteer incentive details into a bulleted list, e.g., Before: 'The receiving nonprofit earns $20 for every volunteer hour, up to $5,000 annually for each participating Red30 employee. This is on top of the $5,000 annual matching contributions...' After: a two-item bulleted list separating the per-hour volunteer benefit and the matching contribution benefit."], "Data and Evidence Usage": ["Attribute or source the key figures, e.g., Before: 'has raised $1.5 million' After: 'has raised $1.5 million, according to Red30Cares internal reporting.'", "Quantify the vague volunteer claim, e.g., Before: 'there's a higher commitment rate for volunteers signed on through the event' After: 'volunteers recruited through the event have a 30% higher retention rate over 12 months (Red30Cares 2023 volunteer survey).'"], "Compliance With Style Guide": []}}, {"filename": "Executive Summary.docx", "scores": {"Tone and Professional Voice": 5, "Clarity and Readability": 4, "Formatting and Structure": 3, "Data and Evidence Usage": 4, "Compliance With Style Guide": 4}, "total_score": 20, "compliance_level": "Good - minor improvements needed", "rationale": {"Tone and Professional Voice": "The document maintains a consistently objective, professional tone appropriate for an executive financial summary, using measured language such as 'demonstrated consistent revenue growth' and 'indicating continued growth expectations.' There is no hyperbole, marketing fluff, or subjective claims, and the voice is confident yet evidence-based throughout.", "Clarity and Readability": "The prose is clear, concise, and well-suited to an executive audience, with financial figures presented in an easily digestible manner. Minor ambiguity exists in the numbered recommendations, where the term 'declining long-term debt' is stated without supporting figures, but overall readability is strong.", "Formatting and Structure": "The document uses a logical hierarchy of headings, but several sections contain headers with no content beneath them, notably 'Revenue by Sales Channel,' 'Revenue by Product Category,' and 'Top Products by Revenue,' which appear to reference missing tables or charts. This creates structural gaps that undermine the completeness of the report.", "Data and Evidence Usage": "The document is data-rich, citing specific figures with dollar amounts, percentages, and unit counts (e.g., '$914.8M to $1,013.1M, representing a 10.7% cumulative growth' and 'Bsquare Robot Blueprint... 71,167 sold'). However, some claims lack supporting data, such as 'declining long-term debt' with no figures, and the empty data sections weaken evidentiary support.", "Compliance With Style Guide": "The document is generally consistent in its use of currency notation ($XXX.XM) and percentage formatting, and abbreviations are used reasonably. There is a minor inconsistency where 'N Central East' uses an abbreviated form while other regions are spelled out, and the report date of 'January 2026' for a 2014-2019 analysis may warrant verification."}, "suggested_edits": {"Tone and Professional Voice": [], "Clarity and Readability": ["Before: 'growing equity ($270.4M in 2018, up from $116.7M in 2014) and declining long-term debt.' After: 'growing equity ($270.4M in 2018, up from $116.7M in 2014) and declining long-term debt (from $X.XM to $X.XM).'"], "Formatting and Structure": ["Populate or remove empty sections. Before: 'Revenue by Sales Channel' (no content). After: add the underlying data table/chart or descriptive sentence, e.g., 'Revenue by Sales Channel: Wholesale accounted for 89% ($X.XM), with direct sales comprising the remainder.'", "Before: 'Top Products by Revenue' (no content). After: insert a ranked list of top products with corresponding revenue figures."], "Data and Evidence Usage": ["Before: 'declining long-term debt.' After: 'long-term debt declining from $X.XM in 2014 to $X.XM in 2018.'"], "Compliance With Style Guide": ["Before: 'N Central East'. After: 'North Central East' to match the fully spelled-out format of other regions like 'Central East' and 'Northeast.'"]}}, {"filename": "Master Presentation.pptx", "scores": {"Tone and Professional Voice": 4, "Clarity and Readability": 3, "Formatting and Structure": 2, "Data and Evidence Usage": 2, "Compliance With Style Guide": 3}, "total_score": 14, "compliance_level": "Moderate issues", "rationale": {"Tone and Professional Voice": "The tone is generally professional and appropriate for a business presentation, using measured language like 'Major growth opportunity for us' and 'Together with our partners.' There is no slang or overly casual phrasing, though the fragmented bullet style makes voice consistency hard to fully assess.", "Clarity and Readability": "Many bullets are clear (e.g., the VR statistics), but several suffer from telegraphic fragments and ambiguity, such as 'RTE-QFN20 delayed due to increased materials demand – 2018 Q2 release' and the standalone list 'Convert / Act / Reach / Plan / Engage' which lacks any explanatory context. The mix of complete and incomplete phrasing reduces overall readability.", "Formatting and Structure": "The structure is disorganized: an 'AGENDA' heading is followed by content that mixes headings, orphaned words, and bullet fragments without clear hierarchy. Items like 'Rechargeable Battery Comparison' appear as bare headings with no supporting content, and the RAISE/PLAN word cluster ('Convert Act Reach Plan Engage') is presented out of logical order and without labels.", "Data and Evidence Usage": "Numerous statistics are cited (50%, 20%, 81%, 12 Million, 171 million, 2.8%, 4.3%) but none include sources, dates of study, or citations, making them unverifiable. There is also a double space in '171 million' and vague claims like 'more than 50% of sales in most manufacturing areas' that lack definition of scope.", "Compliance With Style Guide": "There are inconsistencies in number formatting ('12 Million' capitalized vs '171 million' lowercase), hyphenation of 'E-Commerce'/'E-book'/'E-mail', and inconsistent year references ('2021', '2018 Q2', 'Q1'). Terminology and capitalization are not applied uniformly across slides."}, "suggested_edits": {"Tone and Professional Voice": [], "Clarity and Readability": ["Replace the orphaned word list 'Convert / Act / Reach / Plan / Engage' with a labeled framework, e.g., 'Digital Marketing Funnel: Plan → Reach → Act → Convert → Engage.'", "Revise 'RTE-QFN20 delayed due to increased materials demand – 2018 Q2 release' to 'RTE-QFN20: Release delayed to Q2 2018 due to increased materials demand.'"], "Formatting and Structure": ["Add supporting content or remove bare headings such as 'Rechargeable Battery Comparison' and 'Q4 Sales' that currently appear without any detail.", "Establish a consistent heading hierarchy (e.g., Section > Slide Title > Bullets) so agenda items and their content are clearly grouped, rather than interleaving headings and fragments."], "Data and Evidence Usage": ["Add citations/sources and dates to statistics, e.g., change '81% of people who've tried virtual reality would recommend it to their friends' to '81% of VR users would recommend it to friends (Source: [Study Name], 2017).'", "Fix the double space in 'An estimated  171 million people' to 'An estimated 171 million people' and clarify scope of 'more than 50% of sales in most manufacturing areas.'"], "Compliance With Style Guide": ["Standardize number capitalization: change '12 Million' to '12 million' to match '171 million.'", "Apply consistent hyphenation and casing for compound terms (e.g., 'E-Commerce', 'E-book', 'E-mail' — align to one style such as 'e-commerce', 'e-book', 'email' per style guide)."]}}], "summary": {"total_documents": 5, "avg_total_score": 16.0, "score_distribution": {"Excellent": 0, "Good - minor improvements needed": 3, "Moderate issues": 2, "Significant issues": 0, "Major compliance problems": 0}}};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function scoreColor(s) {
+  return ['var(--seq-0)','var(--seq-1)','var(--seq-2)','var(--seq-3)','var(--seq-4)','var(--seq-5)'][s] || 'var(--seq-3)';
+}
+
+function levelChipColor(level) {
+  if (level.toLowerCase().includes('excellent'))       return '#1e7c1e';
+  if (level.toLowerCase().includes('good'))            return '#256abf';
+  if (level.toLowerCase().includes('moderate'))        return '#c98500';
+  if (level.toLowerCase().includes('significant'))     return '#b36c1a';
+  return '#d03b3b';
+}
+
+function shortCat(cat) {
+  const map = {
+    'Tone and Professional Voice': 'Tone',
+    'Clarity and Readability':     'Clarity',
+    'Formatting and Structure':    'Format',
+    'Data and Evidence Usage':     'Data',
+    'Compliance With Style Guide': 'Style',
+  };
+  return map[cat] || cat;
+}
+
+function formatDate(iso) {
+  try { return new Date(iso).toLocaleString(undefined, {dateStyle:'medium',timeStyle:'short'}); }
+  catch { return iso; }
+}
+
+function parseEditText(txt) {
+  // Try to split "Before: '...' After: '...'"
+  const m = txt.match(/^Before:\s*(.+?)\s+After:\s*(.+)$/s);
+  if (m) return { before: m[1].trim(), after: m[2].trim(), isBeforeAfter: true };
+  return { text: txt, isBeforeAfter: false };
+}
+
+// ── Render summary tiles ───────────────────────────────────────────────────
+function renderSummary() {
+  const s = DATA.summary;
+  const docs = DATA.documents;
+  const minScore = Math.min(...docs.map(d=>d.total_score));
+  const maxScore = Math.max(...docs.map(d=>d.total_score));
+
+  $('subtitle').textContent = `Generated ${formatDate(DATA.generated_at)} · ${s.total_documents} documents · Max score 25`;
+  $('footerGen').textContent = `Generated ${formatDate(DATA.generated_at)}`;
+
+  const tiles = [
+    { label: 'Documents', value: s.total_documents, sub: 'reviewed' },
+    { label: 'Avg Score', value: s.avg_total_score.toFixed(1), sub: 'out of 25' },
+    { label: 'Highest', value: maxScore, sub: docs.find(d=>d.total_score===maxScore)?.filename.replace(/\.[^.]+$/,'') },
+    { label: 'Lowest',  value: minScore, sub: docs.find(d=>d.total_score===minScore)?.filename.replace(/\.[^.]+$/,'') },
+  ];
+
+  $('summaryRow').innerHTML = tiles.map(t => `
+    <div class="tile">
+      <div class="tile-label">${t.label}</div>
+      <div class="tile-value">${t.value}</div>
+      <div class="tile-sub">${t.sub}</div>
+    </div>
+  `).join('');
+
+  // Distribution chips
+  const distOrder = DATA.compliance_thresholds.map(t=>t.label);
+  const colors = ['#1e7c1e','#256abf','#c98500','#b36c1a','#d03b3b'];
+  $('distChips').innerHTML = distOrder.map((label,i) => {
+    const count = s.score_distribution[label] || 0;
+    if (count === 0) return '';
+    return `<div class="chip">
+      <div class="chip-dot" style="background:${colors[i]}"></div>
+      ${count} &nbsp;${label}
+    </div>`;
+  }).join('');
+}
+
+// ── Render heatmap ─────────────────────────────────────────────────────────
+function renderHeatmap() {
+  const cats = DATA.rubric_categories;
+  const docs = DATA.documents;
+
+  // Header
+  const shortCats = cats.map(shortCat);
+  $('heatmapHead').innerHTML = `<tr>
+    <th class="col-file">Document</th>
+    ${shortCats.map((sc,i) => `<th class="col-cat" title="${cats[i]}">${sc}</th>`).join('')}
+    <th class="col-total">Total</th>
+  </tr>`;
+
+  // Body
+  $('heatmapBody').innerHTML = docs.map(doc => {
+    const cells = cats.map(cat => {
+      const score = doc.scores[cat];
+      const rationale = (doc.rationale[cat] || '').replace(/"/g,'&quot;');
+      return `<td class="cell-score">
+        <div class="score-pill" data-score="${score}"
+             data-file="${doc.filename.replace(/"/g,'&quot;')}"
+             data-cat="${cat.replace(/"/g,'&quot;')}"
+             data-rationale="${rationale}"
+             tabindex="0"
+             aria-label="${doc.filename}, ${cat}: ${score}/5">
+          ${score}
+        </div>
+      </td>`;
+    }).join('');
+
+    return `<tr>
+      <td class="cell-file">
+        <span class="file-name">${doc.filename}</span>
+        <span class="file-level">${doc.compliance_level}</span>
+      </td>
+      ${cells}
+      <td class="cell-total">
+        <div class="total-badge">${doc.total_score}/25</div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Legend
+  const legendItems = [
+    [0,'Critical (0)'], [1,'Major (1)'], [2,'Significant (2)'],
+    [3,'Moderate (3)'], [4,'Good (4)'], [5,'Excellent (5)']
+  ];
+  $('heatmapLegend').innerHTML = `<span class="legend-label">Score:</span>` +
+    legendItems.map(([s,l]) =>
+      `<span class="legend-swatch">
+        <span class="legend-box" style="background:${scoreColor(s)};border:1px solid var(--border)"></span>
+        ${l}
+      </span>`
+    ).join('');
+
+  // Accessible table view
+  $('tableView').innerHTML = `<table>
+    <thead><tr>
+      <th>Document</th>
+      ${cats.map(c=>`<th>${c}</th>`).join('')}
+      <th>Total</th>
+      <th>Level</th>
+    </tr></thead>
+    <tbody>
+    ${docs.map(d=>`<tr>
+      <td>${d.filename}</td>
+      ${cats.map(c=>`<td>${d.scores[c]}</td>`).join('')}
+      <td><strong>${d.total_score}</strong></td>
+      <td>${d.compliance_level}</td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Tooltip logic ──────────────────────────────────────────────────────────
+const tooltip = $('tooltip');
+let currentPill = null;
+
+function showTooltip(pill, e) {
+  const score    = parseInt(pill.dataset.score, 10);
+  const file     = pill.dataset.file;
+  const cat      = pill.dataset.cat;
+  const rational = pill.dataset.rationale;
+  const scoreLabels = ['0 – Critical','1 – Major issue','2 – Significant','3 – Moderate','4 – Good','5 – Excellent'];
+
+  $('ttHeader').textContent = cat;
+  const tp = $('ttPill');
+  tp.dataset.score = score;
+  tp.textContent = score;
+  tp.style.background = scoreColor(score);
+  tp.style.color = getComputedStyle(document.documentElement).getPropertyValue(`--seq-text-${score}`);
+  $('ttScoreLabel').textContent = scoreLabels[score] || '';
+  $('ttBody').textContent = rational || '';
+
+  positionTooltip(e);
+  tooltip.classList.add('visible');
+}
+
+function positionTooltip(e) {
+  const tw = 300, th = 150;
+  let x = e.clientX + 14;
+  let y = e.clientY + 14;
+  if (x + tw > window.innerWidth - 10)  x = e.clientX - tw - 14;
+  if (y + th > window.innerHeight - 10) y = e.clientY - th - 14;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+}
+
+// Delegate events on heatmap body
+$('heatmapBody').addEventListener('mouseover', e => {
+  const pill = e.target.closest('.score-pill');
+  if (pill) { currentPill = pill; showTooltip(pill, e); }
+});
+$('heatmapBody').addEventListener('mousemove', e => {
+  if (currentPill) positionTooltip(e);
+});
+$('heatmapBody').addEventListener('mouseout', e => {
+  if (!e.target.closest('.score-pill')) { hideTooltip(); currentPill = null; }
+});
+$('heatmapBody').addEventListener('focusin', e => {
+  const pill = e.target.closest('.score-pill');
+  if (pill) {
+    currentPill = pill;
+    const r = pill.getBoundingClientRect();
+    showTooltip(pill, { clientX: r.left + r.width/2, clientY: r.bottom });
+  }
+});
+$('heatmapBody').addEventListener('focusout', e => {
+  hideTooltip(); currentPill = null;
+});
+
+// ── Render detail cards ────────────────────────────────────────────────────
+function renderCards() {
+  const cats = DATA.rubric_categories;
+  $('cardsGrid').innerHTML = DATA.documents.map(doc => {
+
+    const catRows = cats.map(cat => {
+      const score    = doc.scores[cat];
+      const rational = doc.rationale[cat] || '';
+      const edits    = doc.suggested_edits[cat] || [];
+      const pct      = (score / 5 * 100).toFixed(0);
+
+      const editHtml = edits.length ? `<ul class="edits-list">` +
+        edits.map(e => {
+          const p = parseEditText(e);
+          if (p.isBeforeAfter) {
+            return `<li class="edit-item">
+              <span class="before">Before: ${p.before}</span><br>
+              <span class="after">After: ${p.after}</span>
+            </li>`;
+          }
+          return `<li class="edit-item">${p.text}</li>`;
+        }).join('') + `</ul>` : '';
+
+      return `<div class="category-row">
+        <div class="cat-top">
+          <span class="cat-name">${cat}</span>
+          <span class="cat-score-chip" data-score="${score}">${score}/5</span>
+        </div>
+        <div class="cat-bar-track">
+          <div class="cat-bar-fill" style="width:${pct}%;background:${scoreColor(score)}"></div>
+        </div>
+        <div class="cat-rationale">${rational}</div>
+        ${editHtml}
+      </div>`;
+    }).join('');
+
+    return `<div class="doc-card">
+      <div class="card-header">
+        <div class="card-filename" title="${doc.filename}">${doc.filename}</div>
+        <div class="card-meta">
+          <span class="card-total">${doc.total_score}/25</span>
+          <span class="card-level">${doc.compliance_level}</span>
+        </div>
+      </div>
+      <div class="card-body">${catRows}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Theme toggle ───────────────────────────────────────────────────────────
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.dataset.theme === 'dark';
+  root.dataset.theme = isDark ? 'light' : 'dark';
+  $('themeBtn').textContent = isDark ? '🌙 Dark' : '☀️ Light';
+}
+
+// ── Table view toggle ──────────────────────────────────────────────────────
+let tableVisible = false;
+function toggleTableView() {
+  tableVisible = !tableVisible;
+  const tv = $('tableView');
+  tv.style.display = tableVisible ? 'block' : 'none';
+  document.querySelector('.btn-table').textContent = tableVisible ? 'Hide data table' : 'Show data table';
+}
+
+// ── Fix modal ──────────────────────────────────────────────────────────────
+const FIX_SERVER = 'http://localhost:5000';
+
+function openFixModal() {
+  $('fixModal').classList.add('open');
+  // Reset to initial state
+  $('fixStatus').innerHTML = '';
+  $('modalSubtitle').textContent = "Apply rubric suggestions and save corrected copies to the fixed/ folder.";
+  $('modalRunBtn').disabled = false;
+  $('runBtnIcon').textContent = '⚙';
+  $('runBtnText').textContent = 'Run Fix';
+}
+
+function closeFixModal() {
+  $('fixModal').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === $('fixModal')) closeFixModal();
+}
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeFixModal();
+});
+
+async function runFix() {
+  const btn = $('modalRunBtn');
+  btn.disabled = true;
+  $('runBtnIcon').textContent = '';
+  $('runBtnText').textContent = 'Fixing…';
+
+  // Show spinner
+  $('fixStatus').innerHTML = `
+    <div class="spinner-row">
+      <div class="spinner"></div>
+      <span>Applying edits to documents…</span>
+    </div>`;
+
+  try {
+    const res = await fetch(`${FIX_SERVER}/fix`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `Server returned ${res.status}`);
+    }
+
+    const data = await res.json();
+    renderFixResults(data.results || []);
+
+  } catch (e) {
+    if (e.message.toLowerCase().includes('failed to fetch') ||
+        e.message.toLowerCase().includes('networkerror') ||
+        e.message.toLowerCase().includes('load')) {
+      // Server not running
+      $('fixStatus').innerHTML = `
+        <div class="server-notice">
+          <strong>⚠ Server not running</strong>
+          Open a terminal in the marketing folder and run:<br>
+          <code style="display:inline-block;margin-top:6px;">python fix_server.py</code><br><br>
+          Then come back here and click <strong>Run Fix</strong> again.
+          The server also serves the dashboard at
+          <a href="http://localhost:5000" target="_blank" style="color:inherit;">http://localhost:5000</a>.
+        </div>`;
+      btn.disabled = false;
+      $('runBtnIcon').textContent = '⚙';
+      $('runBtnText').textContent = 'Run Fix';
+    } else {
+      $('fixStatus').innerHTML = `
+        <div class="server-notice">
+          <strong>✗ Error</strong>${e.message}
+        </div>`;
+      btn.disabled = false;
+      $('runBtnIcon').textContent = '⚙';
+      $('runBtnText').textContent = 'Retry';
+    }
+  }
+}
+
+function renderFixResults(results) {
+  const total   = results.length;
+  const fixed   = results.filter(r => r.status === 'fixed').length;
+  const skipped = results.filter(r => r.status === 'skipped').length;
+  const errors  = results.filter(r => r.status === 'error').length;
+
+  $('modalSubtitle').textContent =
+    `${fixed} fixed · ${skipped} skipped · ${errors} error${errors !== 1 ? 's' : ''}`;
+
+  $('runBtnIcon').textContent = fixed > 0 ? '✓' : '⚙';
+  $('runBtnText').textContent = fixed > 0 ? 'Done' : 'Retry';
+
+  const rows = results.map(r => {
+    let icon, detailClass, detail;
+
+    if (r.status === 'fixed') {
+      icon = '✅';
+      detailClass = 'ok';
+      const c = r.changes_applied;
+      const a = r.advice_only;
+      detail = `${c} text replacement${c !== 1 ? 's' : ''} applied`;
+      if (a > 0) detail += ` · ${a} advice-only edit${a !== 1 ? 's' : ''} noted`;
+    } else if (r.status === 'skipped') {
+      icon = '⚠️';
+      detailClass = 'warn';
+      detail = r.reason || 'Skipped';
+    } else {
+      icon = '❌';
+      detailClass = 'err';
+      detail = r.reason || 'Unknown error';
+    }
+
+    return `<div class="result-row">
+      <div class="result-icon">${icon}</div>
+      <div class="result-info">
+        <div class="result-file">${r.file}</div>
+        <div class="result-detail ${detailClass}">${detail}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $('fixStatus').innerHTML = `
+    <div class="fix-results">${rows}</div>
+    ${fixed > 0 ? `<div class="modal-footer">
+      <span>Fixed files saved to <code>fixed/</code> in the marketing folder.</span>
+      <button class="btn-close-modal" onclick="closeFixModal()">Close</button>
+    </div>` : ''}`;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+renderSummary();
+renderHeatmap();
+renderCards();
+</script>
+</body>
+</html>
